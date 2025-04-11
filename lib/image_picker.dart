@@ -101,22 +101,64 @@ class MyHomePageState extends State<MyHomePage> {
     List<MultipartFile> imageFiles = [];
     List<String> filenames = [];
 
+    // Step 1: Get next file indexes from backend
+    List<int> nextIndexes = [];
+
+    try {
+      Response response = await dio.post(
+        'http://192.168.68.110:8069/api/file_explorer/test',
+        data: {
+          'jsonrpc': '2.0',
+          'method': 'call',
+          'params': {'folder_name': folderName, 'num_of_files': images.length},
+        },
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer dc92b110993c04c779581fe56b1a97667b6a3fb8',
+          },
+        ),
+      );
+
+      // Print full response for debugging
+      print('Full API response: ${response.data}');
+
+      // Check for the nested result structure
+      if (response.data != null &&
+          response.data['result'] != null &&
+          response.data['result']['result'] != null &&
+          response.data['result']['result']['next_file_indexes'] != null) {
+        nextIndexes = List<int>.from(
+          response.data['result']['result']['next_file_indexes'],
+        );
+        print('Using file indexes from API: $nextIndexes');
+      } else {
+        // Handle missing data - use default values
+        print('Missing expected data structure in response');
+        nextIndexes = List<int>.generate(images.length, (index) => index + 1);
+        print('Using default file indexes: $nextIndexes');
+      }
+    } catch (e) {
+      print('Failed to fetch indexes: $e');
+      // Default to sequential numbers if API fails
+      nextIndexes = List<int>.generate(images.length, (index) => index + 1);
+      print('Using default file indexes after error: $nextIndexes');
+    }
+
+    // Step 2: Build filenames using backend-provided indexes
     final now = DateTime.now();
     final date = '${now.year}${_twoDigits(now.month)}${_twoDigits(now.day)}';
     final time =
         '${_twoDigits(now.hour)}${_twoDigits(now.minute)}${_twoDigits(now.second)}';
-    final count = images.length.toString().padLeft(2, '0');
 
-    final baseFilename = '${folderName}_${date}_${time}_$count';
+    final baseFilename = '${folderName}_${date}_${time}';
 
     for (int i = 0; i < images.length; i++) {
       MultipartFile multipartFile = await MultipartFile.fromFile(
         images[i].path,
       );
       imageFiles.add(multipartFile);
-      filenames.add(
-        '${baseFilename}_${i + 1}.jpg',
-      ); // Add index to avoid filename clash
+      filenames.add('${nextIndexes[i]}_${baseFilename}.jpg');
     }
 
     FormData formData = FormData.fromMap({
@@ -127,11 +169,11 @@ class MyHomePageState extends State<MyHomePage> {
 
     try {
       Response response = await dio.post(
-        'http://localhost:8069/api/file_explorer/upload_photos',
+        'http://192.168.68.110:8069/api/file_explorer/upload_photos',
         data: formData,
         options: Options(
           headers: {
-            'Authorization': 'Bearer 32cbfb91f138b8e2dd4e0fa79c07192af8039641',
+            'Authorization': 'Bearer dc92b110993c04c779581fe56b1a97667b6a3fb8',
           },
         ),
       );
