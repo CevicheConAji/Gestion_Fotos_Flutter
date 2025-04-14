@@ -6,10 +6,10 @@ class FullSizeImageScreen extends StatelessWidget {
   final Function onDelete;
 
   const FullSizeImageScreen({
-    Key? key,
+    super.key,
     required this.image,
     required this.onDelete,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
