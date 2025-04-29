@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart'; // For picking images from gall
 import 'package:app_final/widget/full_size_image_screen.dart'; // Screen to preview full-size image
 import 'package:app_final/widget/ApiSettingsScreen.dart'; // Settings screen for API input
 import 'package:shared_preferences/shared_preferences.dart'; // For storing/retrieving settings locally
+import 'widget/reorderable_grid_view.dart';
 
 // Main screen widget
 class MyHomePage extends StatefulWidget {
@@ -61,20 +62,28 @@ class MyHomePageState extends State<MyHomePage> {
   }
 
   // Opens full screen preview of selected image
-  void _viewFullSizeImage(int index) {
-    Navigator.of(context).push(
+  void _viewFullSizeImage(int index) async {
+    final File? updatedImage = await Navigator.of(context).push<File>(
       MaterialPageRoute(
         builder:
             (context) => FullSizeImageScreen(
               image: _images[index],
               onDelete: () {
                 setState(() {
-                  _images.removeAt(index); // Delete image on return
+                  _images.removeAt(index);
                 });
+                Navigator.pop(context); // also close screen after delete
               },
             ),
       ),
     );
+
+    // If user cropped image and returned new file, update it
+    if (updatedImage != null) {
+      setState(() {
+        _images[index] = updatedImage;
+      });
+    }
   }
 
   // Validates and starts image upload process
@@ -87,6 +96,7 @@ class MyHomePageState extends State<MyHomePage> {
     }
 
     String folderName = _folderController.text.trim();
+
     if (folderName.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -155,18 +165,31 @@ class MyHomePageState extends State<MyHomePage> {
     });
 
     try {
-      Response response = await dio.post(
+      await dio.post(
         _apiEndpoint!,
         data: formData,
         options: Options(headers: {'Authorization': 'Bearer $_apiKey'}),
       );
-      print('✅ Status code: ${response.statusCode}');
-      print('✅ Response body: ${response.data}');
       return true; // Upload succeeded
     } catch (e) {
-      print('❌ Error uploading images: $e');
+      String errorMessage = 'Upload failed: ${e.toString()}';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(errorMessage)));
       return false; // Upload failed
     }
+  }
+
+  // Handle reordering of images when drag ends
+  void _onReorder(int oldIndex, int newIndex) {
+    setState(() {
+      if (oldIndex < newIndex) {
+        // Removing the item at oldIndex will shorten the list by 1
+        newIndex -= 1;
+      }
+      final File item = _images.removeAt(oldIndex);
+      _images.insert(newIndex, item);
+    });
   }
 
   // Builds the UI
@@ -201,12 +224,12 @@ class MyHomePageState extends State<MyHomePage> {
               ),
             ),
           ),
-          // Image grid or "no images" message
+          // Image grid with reordering capability or "no images" message
           Expanded(
             child:
                 _images.isEmpty
                     ? Center(child: Text('No images selected'))
-                    : GridView.builder(
+                    : ReorderableGridView.builder(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
                         crossAxisSpacing: 5,
@@ -215,10 +238,32 @@ class MyHomePageState extends State<MyHomePage> {
                       itemCount: _images.length,
                       itemBuilder: (context, index) {
                         return GestureDetector(
+                          key: ValueKey(_images[index].path),
                           onTap: () => _viewFullSizeImage(index),
-                          child: Image.file(_images[index], fit: BoxFit.cover),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              Image.file(_images[index], fit: BoxFit.cover),
+                              Positioned(
+                                top: 0,
+                                left: 0,
+                                child: Container(
+                                  padding: EdgeInsets.all(4),
+                                  color: Colors.black54,
+                                  child: Text(
+                                    '${index + 1}',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         );
                       },
+                      onReorder: _onReorder,
                     ),
           ),
           // Buttons for picking, taking, and uploading images

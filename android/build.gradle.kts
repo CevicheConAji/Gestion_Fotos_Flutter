@@ -16,6 +16,6 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-tasks.register<Delete>("clean") {
+tasks.register<Delete>("clapp_final") {
     delete(rootProject.layout.buildDirectory)
 }

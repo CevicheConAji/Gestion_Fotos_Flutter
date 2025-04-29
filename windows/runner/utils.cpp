@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-void CreateAndAttachConsole() {
+void Creatapp_finaldAttachConsole() {
   if (::AllocConsole()) {
     FILE *unused;
     if (freopen_s(&unused, "CONOUT$", "w", stdout)) {
