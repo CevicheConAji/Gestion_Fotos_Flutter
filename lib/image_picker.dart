@@ -53,7 +53,10 @@ class MyHomePageState extends State<MyHomePage> {
 
   // Takes a photo using the camera
   Future<void> _takePhoto() async {
-    final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+    final XFile? photo = await _picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 50,
+    );
     if (photo != null) {
       setState(() {
         _images.add(File(photo.path));
@@ -134,6 +137,8 @@ class MyHomePageState extends State<MyHomePage> {
         );
         setState(() {
           _images.clear();
+          _folderController
+              .clear(); // Clear the folder/package text field after successful upload
         });
       } else {
         ScaffoldMessenger.of(
@@ -197,7 +202,7 @@ class MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Send Images to Odoo'),
+        title: Text('Subir fotos a Odoo'),
         centerTitle: true,
         leading: IconButton(
           icon: Icon(Icons.settings),
@@ -219,7 +224,7 @@ class MyHomePageState extends State<MyHomePage> {
             child: TextField(
               controller: _folderController,
               decoration: InputDecoration(
-                labelText: 'Package ID',
+                labelText: 'Código del pedido',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -228,7 +233,7 @@ class MyHomePageState extends State<MyHomePage> {
           Expanded(
             child:
                 _images.isEmpty
-                    ? Center(child: Text('No images selected'))
+                    ? Center(child: Text('Ninguna imagen seleccionada'))
                     : ReorderableGridView.builder(
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
@@ -274,16 +279,16 @@ class MyHomePageState extends State<MyHomePage> {
               children: [
                 ElevatedButton(
                   onPressed: _pickImages,
-                  child: Text('Pick Images'),
+                  child: Text('Seleccionar Imagen'),
                 ),
                 IconButton(
                   icon: Icon(Icons.camera_alt),
                   onPressed: _takePhoto,
-                  tooltip: 'Take Photos',
+                  tooltip: 'Hacer Fotos',
                 ),
                 ElevatedButton(
                   onPressed: _uploadImagesToOdoo,
-                  child: Text('Upload to Odoo'),
+                  child: Text('Subir a odoo'),
                 ),
               ],
             ),

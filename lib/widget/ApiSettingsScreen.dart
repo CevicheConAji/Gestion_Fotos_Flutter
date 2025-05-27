@@ -45,7 +45,7 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('API Settings'), // Title of the settings screen
+        title: Text('Ajustes API'), // Title of the settings screen
       ),
       body: Padding(
         padding: const EdgeInsets.all(16), // Padding around the form
@@ -66,7 +66,7 @@ class _ApiSettingsScreenState extends State<ApiSettingsScreen> {
             // Save button to save the settings
             ElevatedButton(
               onPressed: _saveSettings, // Call _saveSettings when pressed
-              child: Text('Save'), // Text on the button
+              child: Text('Guardar'), // Text on the button
             ),
           ],
         ),
