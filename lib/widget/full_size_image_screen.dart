@@ -38,7 +38,7 @@ class _FullSizeImageScreenState extends State<FullSizeImageScreen> {
         IOSUiSettings(title: 'Crop Image'),
       ],
     );
-
+    
     if (croppedFile != null) {
       setState(() {
         _imageFile = File(croppedFile.path);
@@ -57,19 +57,22 @@ class _FullSizeImageScreenState extends State<FullSizeImageScreen> {
         appBar: AppBar(
           title: Text('Full Size Image'),
           actions: [
-            IconButton(icon: Icon(Icons.crop), onPressed: _cropImage),
+            IconButton(
+              icon: Icon(Icons.crop), 
+              onPressed: _cropImage
+            ),
             IconButton(
               icon: Icon(Icons.delete),
               onPressed: () {
-                widget.onDelete();
-                Navigator.of(
-                  context,
-                ).pop(); // Delete already pops, no need to return
+                widget.onDelete(); // This already handles the navigation
+                // Removed the redundant Navigator.pop() call
               },
             ),
           ],
         ),
-        body: Center(child: Image.file(_imageFile)),
+        body: Center(
+          child: Image.file(_imageFile)
+        ),
       ),
     );
   }
