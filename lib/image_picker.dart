@@ -25,6 +25,8 @@ class MyHomePageState extends State<MyHomePage> {
       TextEditingController(); // Controller for folder input
   Dio dio = Dio(); // Dio instance for HTTP requests
 
+  bool _isUploading = false;
+
   // Picks multiple images from the gallery
   Future<void> _pickImages() async {
     final List<XFile> pickedFiles = await _picker.pickMultiImage();
@@ -99,7 +101,6 @@ class MyHomePageState extends State<MyHomePage> {
     }
 
     String folderName = _folderController.text.trim();
-
     if (folderName.isEmpty) {
       ScaffoldMessenger.of(
         context,
@@ -130,15 +131,23 @@ class MyHomePageState extends State<MyHomePage> {
     );
 
     if (confirm == true) {
+      setState(() {
+        _isUploading = true;
+      });
+
       bool success = await uploadImagesWithDio(_images, folderName);
+
+      setState(() {
+        _isUploading = false;
+      });
+
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('All images uploaded successfully')),
         );
         setState(() {
           _images.clear();
-          _folderController
-              .clear(); // Clear the folder/package text field after successful upload
+          _folderController.clear();
         });
       } else {
         ScaffoldMessenger.of(
@@ -200,101 +209,117 @@ class MyHomePageState extends State<MyHomePage> {
   // Builds the UI
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Subir fotos a Odoo'),
-        centerTitle: true,
-        leading: IconButton(
-          icon: Icon(Icons.settings),
-          onPressed: () async {
-            // Open API settings screen and wait for the user to return
-            await Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => ApiSettingsScreen()),
-            );
-            // Reload API settings from SharedPreferences
-            await _loadApiSettings();
-          },
-        ),
-      ),
-      body: Column(
-        children: <Widget>[
-          // Text input for folder/package name
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _folderController,
-              decoration: InputDecoration(
-                labelText: 'Código del pedido',
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ),
-          // Image grid with reordering capability or "no images" message
-          Expanded(
-            child:
-                _images.isEmpty
-                    ? Center(child: Text('Ninguna imagen seleccionada'))
-                    : ReorderableGridView.builder(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 5,
-                        mainAxisSpacing: 5,
-                      ),
-                      itemCount: _images.length,
-                      itemBuilder: (context, index) {
-                        return GestureDetector(
-                          key: ValueKey(_images[index].path),
-                          onTap: () => _viewFullSizeImage(index),
-                          child: Stack(
-                            fit: StackFit.expand,
-                            children: [
-                              Image.file(_images[index], fit: BoxFit.cover),
-                              Positioned(
-                                top: 0,
-                                left: 0,
-                                child: Container(
-                                  padding: EdgeInsets.all(4),
-                                  color: Colors.black54,
-                                  child: Text(
-                                    '${index + 1}',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            title: Text('Subir fotos a Odoo'),
+            centerTitle: true,
+            leading: IconButton(
+              icon: Icon(Icons.settings),
+              onPressed:
+                  _isUploading
+                      ? null
+                      : () async {
+                        await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => ApiSettingsScreen(),
                           ),
                         );
+                        await _loadApiSettings();
                       },
-                      onReorder: _onReorder,
-                    ),
-          ),
-          // Buttons for picking, taking, and uploading images
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton(
-                  onPressed: _pickImages,
-                  child: Text('Seleccionar Imagen'),
-                ),
-                IconButton(
-                  icon: Icon(Icons.camera_alt),
-                  onPressed: _takePhoto,
-                  tooltip: 'Hacer Fotos',
-                ),
-                ElevatedButton(
-                  onPressed: _uploadImagesToOdoo,
-                  child: Text('Subir a odoo'),
-                ),
-              ],
             ),
           ),
+          body: Column(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextField(
+                  controller: _folderController,
+                  enabled: !_isUploading,
+                  decoration: InputDecoration(
+                    labelText: 'Código del pedido',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+              ),
+              Expanded(
+                child:
+                    _images.isEmpty
+                        ? Center(child: Text('Ninguna imagen seleccionada'))
+                        : ReorderableGridView.builder(
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 5,
+                                mainAxisSpacing: 5,
+                              ),
+                          itemCount: _images.length,
+                          itemBuilder: (context, index) {
+                            return GestureDetector(
+                              key: ValueKey(_images[index].path),
+                              onTap:
+                                  _isUploading
+                                      ? null
+                                      : () => _viewFullSizeImage(index),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.file(_images[index], fit: BoxFit.cover),
+                                  Positioned(
+                                    top: 0,
+                                    left: 0,
+                                    child: Container(
+                                      padding: EdgeInsets.all(4),
+                                      color: Colors.black54,
+                                      child: Text(
+                                        '${index + 1}',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          onReorder: _isUploading ? (_, __) {} : _onReorder,
+                        ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _isUploading ? null : _pickImages,
+                      child: Text('Seleccionar Imagen'),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.camera_alt),
+                      onPressed: _isUploading ? null : _takePhoto,
+                      tooltip: 'Hacer Fotos',
+                    ),
+                    ElevatedButton(
+                      onPressed: _isUploading ? null : _uploadImagesToOdoo,
+                      child: Text('Subir a odoo'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_isUploading) ...[
+          ModalBarrier(
+            dismissible: false,
+            color: Colors.black.withOpacity(0.5),
+          ),
+          Center(child: CircularProgressIndicator()),
         ],
-      ),
+      ],
     );
   }
 }
