@@ -6,6 +6,7 @@ import 'package:app_final/widget/full_size_image_screen.dart'; // Screen to prev
 import 'package:app_final/widget/ApiSettingsScreen.dart'; // Settings screen for API input
 import 'package:shared_preferences/shared_preferences.dart'; // For storing/retrieving settings locally
 import 'widget/reorderable_grid_view.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 // Main screen widget
 class MyHomePage extends StatefulWidget {
@@ -52,7 +53,6 @@ class MyHomePageState extends State<MyHomePage> {
       _apiEndpoint = prefs.getString('apiEndpoint');
     });
   }
-
   // Takes a photo using the camera
   Future<void> _takePhoto() async {
     final XFile? photo = await _picker.pickImage(
@@ -157,7 +157,7 @@ class MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  // Uploads the selected images using Dio
+  // Uploads the selected images using Dio with compression
   Future<bool> uploadImagesWithDio(List<File> images, String folderName) async {
     if (_apiKey == null || _apiEndpoint == null) {
       ScaffoldMessenger.of(
@@ -169,7 +169,11 @@ class MyHomePageState extends State<MyHomePage> {
     List<MultipartFile> imageFiles = [];
 
     for (var image in images) {
-      MultipartFile multipartFile = await MultipartFile.fromFile(image.path);
+      // Compress the image before upload
+      File? compressedImage = await _compressImage(image);
+      File imageToUpload = compressedImage ?? image; // Use original if compression fails
+      
+      MultipartFile multipartFile = await MultipartFile.fromFile(imageToUpload.path);
       imageFiles.add(multipartFile);
     }
 
@@ -192,6 +196,53 @@ class MyHomePageState extends State<MyHomePage> {
       ).showSnackBar(SnackBar(content: Text(errorMessage)));
       return false; // Upload failed
     }
+  }
+
+  // Compresses an image to reduce file size before upload
+  Future<File?> _compressImage(File imageFile) async {
+    try {
+      // Get file size before compression
+      int originalSize = await imageFile.length();
+      
+      // Only compress if file is larger than 1MB
+      if (originalSize <= 1024 * 1024) {
+        return imageFile; // Return original if already small enough
+      }
+
+      // Generate a compressed file path
+      String targetPath = imageFile.path.replaceAll('.jpg', '_compressed.jpg');
+      if (!targetPath.contains('_compressed')) {
+        // Handle other extensions
+        String extension = imageFile.path.split('.').last;
+        targetPath = imageFile.path.replaceAll('.$extension', '_compressed.jpg');
+      }
+
+      // Compress the image
+      XFile? compressedXFile = await FlutterImageCompress.compressAndGetFile(
+        imageFile.absolute.path,
+        targetPath,
+        quality: 70, // Adjust quality (0-100, lower = more compression)
+        minWidth: 1920, // Maximum width
+        minHeight: 1080, // Maximum height
+        format: CompressFormat.jpeg,
+      );
+
+      if (compressedXFile != null) {
+        File compressedFile = File(compressedXFile.path);
+        int compressedSize = await compressedFile.length();
+        
+        // Log compression results for debugging
+        print('Original size: ${(originalSize / 1024 / 1024).toStringAsFixed(2)} MB');
+        print('Compressed size: ${(compressedSize / 1024 / 1024).toStringAsFixed(2)} MB');
+        print('Compression ratio: ${((1 - compressedSize / originalSize) * 100).toStringAsFixed(1)}%');
+        
+        return compressedFile;
+      }
+    } catch (e) {
+      print('Error compressing image: $e');
+    }
+    
+    return null; // Return null if compression failed
   }
 
   // Handle reordering of images when drag ends
