@@ -5,8 +5,8 @@ import 'package:image_picker/image_picker.dart'; // For picking images from gall
 import 'package:app_final/widget/full_size_image_screen.dart'; // Screen to preview full-size image
 import 'package:app_final/widget/ApiSettingsScreen.dart'; // Settings screen for API input
 import 'package:shared_preferences/shared_preferences.dart'; // For storing/retrieving settings locally
-import 'widget/reorderable_grid_view.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'widget/reorderable_grid_view.dart'; // Custom widget for reorderable grid view
+import 'package:flutter_image_compress/flutter_image_compress.dart'; // For compressing images before upload
 
 // Main screen widget
 class MyHomePage extends StatefulWidget {
@@ -209,13 +209,8 @@ class MyHomePageState extends State<MyHomePage> {
         return imageFile; // Return original if already small enough
       }
 
-      // Generate a compressed file path
-      String targetPath = imageFile.path.replaceAll('.jpg', '_compressed.jpg');
-      if (!targetPath.contains('_compressed')) {
-        // Handle other extensions
-        String extension = imageFile.path.split('.').last;
-        targetPath = imageFile.path.replaceAll('.$extension', '_compressed.jpg');
-      }
+      // Usa el mismo path para sobrescribir la imagen original
+      String targetPath = imageFile.path;
 
       // Compress the image
       XFile? compressedXFile = await FlutterImageCompress.compressAndGetFile(
