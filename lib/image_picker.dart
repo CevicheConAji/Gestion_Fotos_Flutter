@@ -2,8 +2,8 @@ import 'dart:io'; // Used to handle File objects from the device
 import 'package:dio/dio.dart'; // HTTP client for making network requests
 import 'package:flutter/material.dart'; // Flutter UI framework
 import 'package:image_picker/image_picker.dart'; // For picking images from gallery/camera
-import 'package:app_final/widget/full_size_image_screen.dart'; // Screen to preview full-size image
-import 'package:app_final/widget/ApiSettingsScreen.dart'; // Settings screen for API input
+import 'package:photo_manager/widget/full_size_image_screen.dart'; // Screen to preview full-size image
+import 'package:photo_manager/widget/ApiSettingsScreen.dart'; // Settings screen for API input
 import 'package:shared_preferences/shared_preferences.dart'; // For storing/retrieving settings locally
 import 'widget/reorderable_grid_view.dart'; // Custom widget for reorderable grid view
 import 'package:flutter_image_compress/flutter_image_compress.dart'; // For compressing images before upload
@@ -209,8 +209,12 @@ class MyHomePageState extends State<MyHomePage> {
         return imageFile; // Return original if already small enough
       }
 
-      // Usa el mismo path para sobrescribir la imagen original
-      String targetPath = imageFile.path;
+      // Create a unique target path for the compressed image
+      String originalPath = imageFile.path;
+      String directory = originalPath.substring(0, originalPath.lastIndexOf('/'));
+      String fileName = originalPath.substring(originalPath.lastIndexOf('/') + 1);
+      String nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
+      String targetPath = '$directory/${nameWithoutExtension}_compressed.jpg';
 
       // Compress the image
       XFile? compressedXFile = await FlutterImageCompress.compressAndGetFile(

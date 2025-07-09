@@ -1,4 +1,4 @@
-import 'package:app_final/image_picker.dart';
+import 'package:photo_manager/image_picker.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -11,7 +11,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Image Picker Demo',
+      title: 'Photo Manager',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.teal,

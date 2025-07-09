@@ -1,5 +1,5 @@
-name: app_final
-description: "Sends fotos fr."
+name: photo_manager
+description: "Photo Manager - Aplicación para gestión de fotos"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
